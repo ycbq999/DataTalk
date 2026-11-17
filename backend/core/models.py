@@ -51,3 +51,9 @@ class SecurityNote(models.Model):
         constraints = [
             models.UniqueConstraint(fields=["owner", "security"], name="unique_security_note"),
         ]
+
+
+class AuthWindow(models.Model):
+    key = models.CharField(max_length=64, primary_key=True)
+    expires_at = models.DateTimeField(db_index=True)
+    attempts = models.PositiveIntegerField(default=0)

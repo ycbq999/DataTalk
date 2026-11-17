@@ -1,4 +1,5 @@
 from unittest import skipUnless
+from unittest.mock import patch
 
 from django.contrib.auth import get_user_model
 from django.db import DatabaseError, connection, transaction
@@ -17,6 +18,54 @@ class DashboardApiTests(TestCase):
         cls.alice = get_user_model().objects.create_user("alice", password="local-test-password")
         cls.bob = get_user_model().objects.create_user("bob")
         cls.security = Security.objects.get(symbol="MSFT")
+
+    def test_public_stock_catalog_exposes_no_private_workspace_data(self):
+        response = self.client.get(f"{API}/market/securities/", {"q": "microsoft", "exchange": "XNAS"})
+        self.assertEqual(response.json(), [{
+            "id": self.security.pk, "symbol": "MSFT", "exchange": "XNAS", "name": "Microsoft",
+        }])
+        self.assertEqual(self.client.get(
+            f"{API}/market/securities/", {"q": "MSFT", "exchange": "XNYS"}
+        ).json(), [])
+        self.assertRedirects(self.client.get("/workspace/"), "/sign-in/?next=/workspace/",
+                             fetch_redirect_response=False)
+        for path in ("watchlists/", f"securities/{self.security.pk}/note/", f"securities/{self.security.pk}/research/"):
+            self.assertEqual(self.client.get(f"{API}/{path}").status_code, 403)
+
+    def test_registration_requires_csrf_and_signs_in_a_valid_new_account(self):
+        client = Client(enforce_csrf_checks=True)
+        url = f"{API}/register/"
+        details = {"username": "new-investor", "password": "a-strong-passphrase!!"}
+        self.assertEqual(client.post(url, details, content_type="application/json").status_code, 403)
+        client.get(f"{API}/session/")
+        headers = {"X-CSRFToken": client.cookies["csrftoken"].value}
+        weak = client.post(
+            url, {**details, "password": "1234"}, content_type="application/json", headers=headers,
+        )
+        self.assertEqual(weak.status_code, 400)
+        self.assertIn("password", weak.json())
+        result = client.post(url, details, content_type="application/json", headers=headers)
+        user = get_user_model().objects.get(username=details["username"])
+        self.assertEqual(result.status_code, 201)
+        self.assertEqual(result.json(), {"user": {"id": user.pk, "username": details["username"]}})
+        self.assertFalse(user.is_staff)
+        self.assertTrue(user.check_password(details["password"]))
+        self.assertEqual(client.get(f"{API}/watchlists/").json(), [])
+
+        duplicate = self.client.post(
+            url, {**details, "username": "NEW-INVESTOR"}, content_type="application/json",
+        )
+        self.assertEqual(duplicate.status_code, 400)
+        self.assertIn("username", duplicate.json())
+
+    def test_signup_throttle_is_shared_across_sessions(self):
+        url = f"{API}/register/"
+        body = {"username": "a", "password": "1234"}
+        with patch.dict("core.auth_limits.LIMITS", {"sign-up": (1, 60)}):
+            self.assertEqual(self.client.post(url, body, content_type="application/json").status_code, 400)
+            limited = Client().post(url, body, content_type="application/json")
+        self.assertEqual(limited.status_code, 429)
+        self.assertGreater(int(limited.headers["Retry-After"]), 0)
 
     def test_login_logout_and_mutations_enforce_csrf(self):
         client = Client(enforce_csrf_checks=True)

@@ -8,6 +8,8 @@ urlpatterns = [
     path("health/", views.health),
     path("ready/", views.ready),
     path("session/", views.session),
+    path("register/", views.register),
+    path("market/securities/", views.PublicSecurityList.as_view()),
     path("securities/", views.SecurityList.as_view()),
     path("securities/<int:security_id>/note/", views.Note.as_view()),
     path("securities/<int:security_id>/research/", SecurityResearch.as_view()),

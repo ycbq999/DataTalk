@@ -8,7 +8,6 @@ Install Docker with the Compose plugin. On Windows, use Docker Desktop with its 
 
 ~~~sh
 docker compose up --build -d
-docker compose exec web python manage.py createsuperuser
 ~~~
 
 Open [the dashboard](http://127.0.0.1:5173/) or [Django admin](http://127.0.0.1:8000/admin/). Local services use PostgreSQL, apply migrations before starting Django, and publish only Vite and Django to localhost. Changes to Python and React source reload. After editing dependencies or Vite configuration, rebuild the corresponding image.
@@ -25,7 +24,7 @@ Render is the initial provider. Create separate staging and production services,
 2. Create a managed PostgreSQL database. Use its original owner credentials for migrations. Connect as that owner and run `infra/postgres/runtime-role.sql` using `psql -f` in the application database with `THESISWATCH_DB_APP_PASSWORD` supplied via your local process environment. It creates `thesiswatch_app` and grants access to the owner's tables and sequences, including those created by future migrations. Keep this role separate from the migration owner and any role capable of bypassing row security. Use private database URLs for hosted app services, and restrict external database access after provisioning.
 3. Create the paid image-backed **web service**. Keep the image's default start command, set the health check to `/api/v1/ready/`, and set its pre-deploy command to `env MIGRATE_DB=1 python manage.py migrate --noinput`. Fill in the environment variables below before first deployment. The entry command removes the migration credential from Gunicorn's environment. Render still stores it as a web service secret and injects it into Render-managed shells. Restrict service-shell and configuration access accordingly. The worker never needs this secret.
 4. To enable research, create a persistent Redis-compatible Key Value service with `noeviction` and a background **worker** from the same image digest. Set its Docker Command to `celery -A config worker --loglevel INFO --concurrency=1`. Give it the worker settings below and a shutdown grace period long enough for in-flight work to acknowledge or finish, within provider limits. Configure the web application to use that same broker only after the worker is ready.
-5. Create the first Django administrator with `python manage.py createsuperuser` in the web service shell. Open `/admin/` over HTTPS to create invited accounts and manage the supported security catalog. Set an initial password for each invited account and share it through an appropriate private channel.
+5. Create a separate Django administrator with `python manage.py createsuperuser` in the web service shell. Open `/admin/` over HTTPS to manage accounts and the supported stock catalog. Visitors can create ordinary accounts from the public home page.
 
 | Environment variable | Web | Worker |
 | --- | --- | --- |
@@ -63,7 +62,7 @@ To release a change:
 1. Open a pull request and verify CI passes. Merge the reviewed change to `main`.
 2. Wait for the new main CI run. It publishes one image and records its digest.
 3. Run **Release verified image** from `main` with `staging` and the successful **CI run ID**. Use the numeric ID in the Actions run URL. The workflow deploys the digest, waits for Render, checks the API and dashboard assets, and deploys the optional worker.
-4. Sign in to staging. Create a watchlist, add a supported ticker, and check that a second account cannot see it. If research is enabled, complete a small live research run and open its citations before promotion.
+4. Browse stocks while signed out. Register a test account, create a watchlist, add a supported ticker, and check that a second account cannot see it. If research is enabled, complete a small live research run and open its citations before promotion.
 5. Run the same workflow from `main` with `production` and the successful **staging release run ID**. It accepts the staged digest and requires matching worker deployment mode. Check the resulting production deployment and service alerts.
 
 The production dispatch is manual and works without GitHub's paid environment review rules. For environments with separate approvers and a GitHub plan that supports protection rules for the repository, set up protected deployment environments before broadening repository write access.
@@ -73,6 +72,7 @@ The production dispatch is manual and works without GitHub's paid environment re
 - Keep the current and previous image digests available in GitHub Container Registry. If a deployment fails, check the Render deploy ID and logs before retrying. Use the release workflow with the earlier successful staging run, or Render's rollback if the Actions evidence expired. Keep the web and worker on compatible versions.
 - Use additive migrations while the previous image can continue running. The database migration can outlive an application rollback. For data loss or irreversible schema changes, use a database recovery plan, verify the restored instance, and deliberately switch connections.
 - Turn on managed PostgreSQL point-in-time recovery before storing real data. Practice a restore in an isolated instance. Verify that restored security policies and runtime grants still block cross-account access.
+- The app limits login and signup attempts by the network peer. If a reverse proxy makes the app see one peer for many visitors, use per-client limits at the edge before opening registration to heavy traffic. Expired rows in `core_authwindow` can be pruned periodically.
 - Monitor web errors, database availability, and worker failures. Track queued jobs and provider calls. After a broker or worker outage, run `python manage.py recover_research` from a service with the runtime role and broker access. It re-enqueues eligible interrupted jobs and prints a continuation cursor for batches. Review recurring failures before retrying again.
 - Start with one web instance and one worker. Increase workers as queue wait rises, and review database connections and provider limits before increasing web concurrency or research caps. Keep staging separate from production data and remove temporary staging resources when they are no longer needed.
 
