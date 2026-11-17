@@ -1,12 +1,12 @@
 # ThesisWatch — Phase 1 Specification
 
-**Status:** Draft v1.0 · **Target:** 2027 · **Owner:** ThesisWatch
+**Status:** Draft v2.0 · **Target:** 2027 · **Owner:** ThesisWatch
 
 ## Product objective
 Ship a small, elegant, demonstrable **production-grade AI investment research SaaS** that (1) is tested by real investors, (2) demonstrates practical AI Engineer skills, and (3) helps track the user's own stock investment theses. Favor a reliable end-to-end workflow over a broad feature list.
 
 ## Phase 1 scope
-1. **Accounts and watchlists:** Secure sign-in; every user may create, rename, and delete multiple watchlists; add/remove any stock in the supported universe. Per-user/per-stock preferences are stored in the schema for future monitoring.
+1. **Accounts and watchlists:** Invite-only accounts with secure sign-in. Users can create, rename, and delete multiple watchlists, add or remove any stock in the supported universe, and keep private notes per stock. Monitoring preferences can be added to the user and security relationship in Phase 2.
 2. **Autonomous research:** A user selects a stock and starts an asynchronous AI research job. The agent gathers evidence from official filings, investor relations, and web search; distinguishes facts from interpretations; and reports missing evidence.
 3. **Structured thesis:** Schema-validated bull/bear cases, key assumptions, catalysts, risks, invalidation conditions, investment horizon, uncertainty, and dated source citations. Verify claims and numerical facts against attributable sources where feasible.
 4. **Persistent history:** Save each completed thesis as an immutable version with ticker/security identity, source provenance, research timestamp, schema/model/prompt versions, and job metadata. Allow a user to regenerate and review historical versions.
@@ -15,11 +15,11 @@ Ship a small, elegant, demonstrable **production-grade AI investment research Sa
 **Demo tickers:** NVDA, QCOM, HPE — examples only, never hard-coded restrictions.
 
 ## Proposed technology
-- **Frontend:** React, TypeScript, Tailwind CSS, shadcn/ui; Recharts or Apache ECharts.
-- **API and hosting:** Cloudflare Workers and Cloudflare-hosted frontend.
-- **Research orchestration:** OpenAI Responses API with web search; durable Cloudflare Workflows/Queues for background jobs.
-- **Database and auth:** Supabase PostgreSQL and Supabase Auth.
-- **Engineering:** GitHub monorepo, GitHub Actions CI/CD, automated tests, structured logs, error monitoring.
+- **Frontend:** React, TypeScript, and Vite. Production builds serve the UI and the API from the same domain.
+- **API and auth:** Python, Django REST Framework, Django sessions and CSRF protection, and Django admin for account and security-catalog operations.
+- **Research orchestration:** OpenAI Responses API with web search, Celery, and a persistent Redis-compatible broker. PostgreSQL records job state and completed theses.
+- **Database:** PostgreSQL, with versioned Django migrations and separate migration and runtime roles.
+- **Engineering:** Docker Compose for local development, GitHub Actions for tests and image publishing, and promotion of the same image digest through staging and production. Render is the initial managed-hosting target.
 - **Later extensions:** Replaceable financial data providers, Reddit/social sentiment, Python analytics, valuation, simulated portfolios.
 
 ## Non-negotiable architecture requirements

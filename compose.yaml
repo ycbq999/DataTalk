@@ -1,0 +1,109 @@
+name: thesiswatch
+
+x-backend: &backend
+  build:
+    context: .
+    target: backend-dev
+  volumes:
+    - ./backend:/app/backend:ro
+
+x-runtime-env: &runtime-env
+  DATABASE_URL: postgresql://thesiswatch_app:${THESISWATCH_DB_APP_PASSWORD:-local-app-only}@db:5432/thesiswatch
+  DJANGO_SECRET_KEY: ${DJANGO_SECRET_KEY:-django-insecure-local-development-only}
+  DJANGO_DEBUG: "1"
+  DJANGO_SECURE_COOKIES: "0"
+  DJANGO_ALLOWED_HOSTS: localhost,127.0.0.1,web
+  DJANGO_CSRF_TRUSTED_ORIGINS: http://localhost:5173,http://127.0.0.1:5173
+  RESEARCH_ENABLED: ${RESEARCH_ENABLED:-0}
+  RESEARCH_DAILY_LIMIT: ${RESEARCH_DAILY_LIMIT:-5}
+  RESEARCH_GLOBAL_DAILY_LIMIT: ${RESEARCH_GLOBAL_DAILY_LIMIT:-25}
+  CELERY_BROKER_URL: redis://redis:6379/0
+
+services:
+  db:
+    image: postgres:17-alpine
+    environment:
+      POSTGRES_DB: thesiswatch
+      POSTGRES_USER: thesiswatch_owner
+      POSTGRES_PASSWORD: ${THESISWATCH_DB_OWNER_PASSWORD:-local-owner-only}
+      THESISWATCH_DB_APP_PASSWORD: ${THESISWATCH_DB_APP_PASSWORD:-local-app-only}
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+      - ./infra/postgres/runtime-role.sql:/docker-entrypoint-initdb.d/10-runtime-role.sql:ro
+    healthcheck:
+      test: [CMD, pg_isready, -h, 127.0.0.1, -U, thesiswatch_owner, -d, thesiswatch]
+      interval: 5s
+      timeout: 3s
+      retries: 12
+
+  migrate:
+    <<: *backend
+    environment:
+      <<: *runtime-env
+      MIGRATE_DB: "1"
+      MIGRATION_DATABASE_URL: postgresql://thesiswatch_owner:${THESISWATCH_DB_OWNER_PASSWORD:-local-owner-only}@db:5432/thesiswatch
+    command: [python, manage.py, migrate, --noinput]
+    depends_on:
+      db:
+        condition: service_healthy
+
+  web:
+    <<: *backend
+    environment: *runtime-env
+    command: [python, manage.py, runserver, '0.0.0.0:8000']
+    ports:
+      - 127.0.0.1:8000:8000
+    depends_on:
+      migrate:
+        condition: service_completed_successfully
+    healthcheck:
+      test: [CMD, python, -c, "from urllib.request import urlopen; urlopen('http://127.0.0.1:8000/api/v1/ready/', timeout=2).close()"]
+      interval: 5s
+      timeout: 3s
+      retries: 12
+
+  frontend:
+    build:
+      context: .
+      target: frontend-dev
+    command: [pnpm, dev, --host, '0.0.0.0', --strictPort]
+    environment:
+      API_PROXY_TARGET: http://web:8000
+      CHOKIDAR_USEPOLLING: "true"
+    volumes:
+      - ./frontend/src:/app/frontend/src:ro
+      - ./frontend/index.html:/app/frontend/index.html:ro
+    ports:
+      - 127.0.0.1:5173:5173
+    depends_on:
+      web:
+        condition: service_healthy
+
+  redis:
+    profiles: [research]
+    image: redis:7-alpine
+    command: [redis-server, --appendonly, 'yes', --maxmemory-policy, noeviction]
+    volumes:
+      - redis-data:/data
+    healthcheck:
+      test: [CMD, redis-cli, ping]
+      interval: 5s
+      timeout: 3s
+      retries: 12
+
+  worker:
+    <<: *backend
+    profiles: [research]
+    environment:
+      <<: *runtime-env
+      OPENAI_API_KEY: ${OPENAI_API_KEY:-}
+    command: [celery, -A, config, worker, --loglevel, INFO, --concurrency=1]
+    depends_on:
+      migrate:
+        condition: service_completed_successfully
+      redis:
+        condition: service_healthy
+
+volumes:
+  postgres-data:
+  redis-data:
