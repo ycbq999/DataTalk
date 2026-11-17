@@ -1,0 +1,102 @@
+name: Release verified image
+
+on:
+  workflow_dispatch:
+    inputs:
+      environment:
+        description: Where to release
+        required: true
+        type: choice
+        options:
+          - staging
+          - production
+      verified_run_id:
+        description: Successful CI run ID for staging, successful staging release run ID for production
+        required: true
+        type: string
+
+permissions:
+  actions: read
+  contents: read
+
+concurrency:
+  group: render-release-${{ inputs.environment }}
+  cancel-in-progress: false
+
+jobs:
+  release:
+    if: github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          persist-credentials: false
+      - name: Load the image from a verified main run
+        env:
+          GH_TOKEN: ${{ github.token }}
+          RELEASE_TARGET: ${{ inputs.environment }}
+          VERIFIED_RUN_ID: ${{ inputs.verified_run_id }}
+        run: |
+          [[ "$VERIFIED_RUN_ID" =~ ^[1-9][0-9]*$ ]] || { echo "Use a GitHub Actions run ID."; exit 1; }
+          case "$RELEASE_TARGET" in
+            staging) file=".github/workflows/ci.yml"; event="push"; artifact="verified-image" ;;
+            production) file=".github/workflows/release.yml"; event="workflow_dispatch"; artifact="staged-image" ;;
+            *) exit 1 ;;
+          esac
+          run_json=$(gh api "repos/$GITHUB_REPOSITORY/actions/runs/$VERIFIED_RUN_ID")
+          jq --exit-status --arg file "$file" --arg event "$event" \
+            '.head_branch == "main" and .path == $file and .event == $event and .conclusion == "success"' \
+            <<< "$run_json" > /dev/null
+          attempt=$(jq -er '.run_attempt' <<< "$run_json")
+          gh run download "$VERIFIED_RUN_ID" --repo "$GITHUB_REPOSITORY" \
+            --name "$artifact-$attempt" --dir release-evidence
+          image=$(cat release-evidence/image.txt)
+          commit=$(cat release-evidence/commit.txt)
+          [[ "$image" != *$'\n'* && "$commit" =~ ^[0-9a-f]{40}$ ]]
+          [[ "${image%@*}" == "ghcr.io/${GITHUB_REPOSITORY,,}" && "${image##*@}" =~ ^sha256:[0-9a-f]{64}$ ]]
+          if [[ "$RELEASE_TARGET" == staging ]]; then
+            [[ "$commit" == "$(jq -er '.head_sha' <<< "$run_json")" ]]
+          fi
+          {
+            printf 'RELEASE_IMAGE=%s\n' "$image"
+            printf 'RELEASE_COMMIT=%s\n' "$commit"
+          } >> "$GITHUB_ENV"
+      - name: Deploy and verify staging
+        if: inputs.environment == 'staging'
+        env:
+          RENDER_API_KEY: ${{ secrets.RENDER_STAGING_API_KEY }}
+          RENDER_WEB_SERVICE_ID: ${{ vars.RENDER_STAGING_WEB_SERVICE_ID }}
+          RENDER_WORKER_SERVICE_ID: ${{ vars.RENDER_STAGING_WORKER_SERVICE_ID }}
+          THESISWATCH_URL: ${{ vars.RENDER_STAGING_URL }}
+        run: |
+          python infra/render_release.py
+          if [[ -n "$RENDER_WORKER_SERVICE_ID" ]]; then
+            printf '%s\n' enabled > release-evidence/worker.txt
+          else
+            printf '%s\n' disabled > release-evidence/worker.txt
+          fi
+      - name: Deploy the staged image to production
+        if: inputs.environment == 'production'
+        env:
+          RENDER_API_KEY: ${{ secrets.RENDER_PRODUCTION_API_KEY }}
+          RENDER_WEB_SERVICE_ID: ${{ vars.RENDER_PRODUCTION_WEB_SERVICE_ID }}
+          RENDER_WORKER_SERVICE_ID: ${{ vars.RENDER_PRODUCTION_WORKER_SERVICE_ID }}
+          THESISWATCH_URL: ${{ vars.RENDER_PRODUCTION_URL }}
+        run: |
+          mode=disabled
+          if [[ -n "$RENDER_WORKER_SERVICE_ID" ]]; then
+            mode=enabled
+          fi
+          if [[ "$(cat release-evidence/worker.txt)" != "$mode" ]]; then
+            echo "Stage the image with the same worker configuration before promoting it."
+            exit 1
+          fi
+          python infra/render_release.py
+      - uses: actions/upload-artifact@v4
+        if: inputs.environment == 'staging'
+        with:
+          name: staged-image-${{ github.run_attempt }}
+          path: release-evidence/
+          if-no-files-found: error
+          retention-days: 30
