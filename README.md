@@ -16,6 +16,20 @@ To manage the catalog and accounts in [Django admin](http://127.0.0.1:8000/admin
 
 Compose runs a one-time migration service before the web app starts. The database volume preserves watchlists and notes across restarts. Each computer builds its own dependencies from Git and the lockfiles. Browser notes from the original prototype are not imported automatically.
 
+## Develop in GitHub Codespaces
+
+Once the `.devcontainer` files are on GitHub, open the repository and choose **Code → Codespaces → Create codespace**. If you already have a codespace, run **Codespaces: Rebuild Container** from the command palette after pulling the new files.
+
+Run this in the browser editor's terminal:
+
+```sh
+bash .devcontainer/compose.sh up --build -d
+```
+
+In the **Ports** tab, open **ThesisWatch** on port **5173** and keep its visibility **Private**. The preview uses the codespace's own PostgreSQL database. Sign up there if you're using it for the first time. The script configures the forwarded HTTPS address for Vite and Django, so signup and sign-in work through the preview.
+
+When you're done, stop the codespace from [your Codespaces list](https://github.com/codespaces). To stop the app while keeping the codespace open, run `bash .devcontainer/compose.sh stop`.
+
 ## Enable research locally
 
 Copy `.env.example` to `.env`, set `RESEARCH_ENABLED=1`, enter your own `OPENAI_API_KEY`, and start the extra services:

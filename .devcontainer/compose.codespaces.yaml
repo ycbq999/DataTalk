@@ -1,0 +1,12 @@
+services:
+  web:
+    environment:
+      DJANGO_ALLOWED_HOSTS: "localhost,127.0.0.1,web,${THESISWATCH_PREVIEW_HOST:?Run .devcontainer/compose.sh in Codespaces}"
+      DJANGO_CSRF_TRUSTED_ORIGINS: "https://${THESISWATCH_PREVIEW_HOST}"
+      DJANGO_SECURE_COOKIES: "1"
+      # GitHub provides HTTPS to the browser and forwards HTTP inside the codespace.
+      DJANGO_SECURE_SSL_REDIRECT: "0"
+
+  frontend:
+    environment:
+      __VITE_ADDITIONAL_SERVER_ALLOWED_HOSTS: "${THESISWATCH_PREVIEW_HOST}"

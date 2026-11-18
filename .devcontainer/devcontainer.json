@@ -1,0 +1,18 @@
+{
+  "name": "ThesisWatch",
+  "image": "mcr.microsoft.com/devcontainers/base:ubuntu24.04",
+  "remoteUser": "vscode",
+  "features": {
+    "ghcr.io/devcontainers/features/docker-in-docker:4": {}
+  },
+  "forwardPorts": [5173],
+  "portsAttributes": {
+    "5173": {
+      "label": "ThesisWatch",
+      "onAutoForward": "notify"
+    }
+  },
+  "otherPortsAttributes": {
+    "onAutoForward": "ignore"
+  }
+}
