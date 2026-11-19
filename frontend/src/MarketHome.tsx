@@ -1,7 +1,26 @@
-import { ArrowRight, Bookmark, List, Search, X } from 'lucide-react';
+import { CornerUpRight, List, Search, TrendingDown, TrendingUp, X } from 'lucide-react';
 import { useEffect, useRef, useState } from 'react';
 import { errorMessage, request } from './api';
 import type { Security } from './api';
+
+const sampleMovers = [
+  { kind: 'loss', label: 'Top Loss', icon: TrendingDown, symbol: 'INTC', name: 'Intel', change: -0.386 },
+  { kind: 'gain', label: 'Top Gains', icon: TrendingUp, symbol: 'NVDA', name: 'NVIDIA', change: 0.824 },
+  { kind: 'rebound', label: 'Top Rebound', icon: CornerUpRight, symbol: 'AMD', name: 'Advanced Micro Devices', change: 0.612 },
+] as const;
+
+const sampleEvents = [
+  { title: 'GTA VI release', category: 'Gaming', day: 6 },
+  { title: 'SpaceX Starship test flight', category: 'Spaceflight', day: 14 },
+  { title: 'U.S. inflation report', category: 'Economy', day: 23 },
+] as const;
+
+const formatChange = new Intl.NumberFormat('en-US', {
+  style: 'percent',
+  signDisplay: 'exceptZero',
+  minimumFractionDigits: 1,
+  maximumFractionDigits: 1,
+});
 
 function exchangeName(exchange: string) {
   if (exchange === 'XNAS') return 'Nasdaq';
@@ -9,7 +28,7 @@ function exchangeName(exchange: string) {
   return exchange;
 }
 
-export function MarketHome({ signedIn }: { signedIn: boolean }) {
+export function MarketHome() {
   const [query, setQuery] = useState('');
   const [exchange, setExchange] = useState('');
   const [exchanges, setExchanges] = useState<string[]>([]);
@@ -42,8 +61,8 @@ export function MarketHome({ signedIn }: { signedIn: boolean }) {
   return (
     <main id="main" className="market-home">
       <section className="market-hero" aria-labelledby="market-title">
-        <h1 id="market-title">Explore stocks</h1>
-        <p>Find the companies you follow and build a workspace for your investment research.</p>
+        <h1 id="market-title">Top Stories</h1>
+        <p>Search the stock directory and preview one-year market movers.</p>
         <div className="market-search" role="search" aria-label="Stock catalog">
           <label className="sr-only" htmlFor="market-search">Search stocks</label>
           <Search size={19} aria-hidden="true" />
@@ -118,14 +137,42 @@ export function MarketHome({ signedIn }: { signedIn: boolean }) {
           )}
         </section>
 
-        <aside className="panel market-workspace" aria-labelledby="market-workspace-title">
-          <div className="market-workspace-icon"><Bookmark size={20} aria-hidden="true" /></div>
-          <h2 id="market-workspace-title">Your research workspace</h2>
-          <p>Save custom watchlists and notes, then revisit your investment theses and their sources.</p>
-          <a className="button button-primary" href={signedIn ? '/workspace/' : '/sign-up/'}>
-            {signedIn ? 'Open workspace' : 'Create an account'} <ArrowRight size={16} aria-hidden="true" />
-          </a>
-        </aside>
+        <div className="market-sidebar">
+          <aside className="panel market-movers" aria-labelledby="market-movers-title">
+            <div className="panel-header">
+              <h2 id="market-movers-title">One-year movers</h2>
+              <span className="market-sample-label">Sample data</span>
+            </div>
+            {sampleMovers.map(({ kind, label, icon: Icon, symbol, name, change }) => (
+              <div className="market-mover" key={kind} data-kind={kind}>
+                <h3><span className="market-mover-icon"><Icon size={16} aria-hidden="true" /></span>{label}</h3>
+                <div className="market-mover-quote">
+                  <div>
+                    <strong>{symbol}</strong>
+                    <p>{name}</p>
+                  </div>
+                  <strong className="market-mover-change">{formatChange.format(change)}</strong>
+                </div>
+                {kind === 'rebound' && <p className="market-mover-basis">From the 12-month low</p>}
+              </div>
+            ))}
+          </aside>
+
+          <aside className="panel market-events" aria-labelledby="market-events-title">
+            <div className="panel-header">
+              <h2 id="market-events-title">Next 30 Days</h2>
+              <span className="market-sample-label">Sample schedule</span>
+            </div>
+            <ol className="market-event-list" role="list">
+              {sampleEvents.map(({ title, category, day }) => (
+                <li key={title}>
+                  <p className="market-event-meta"><span>{category}</span><span>Day {day}</span></p>
+                  <h3>{title}</h3>
+                </li>
+              ))}
+            </ol>
+          </aside>
+        </div>
       </div>
     </main>
   );

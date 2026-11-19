@@ -1,9 +1,10 @@
-import { BookOpen, CircleAlert, LogOut } from 'lucide-react';
+import { CircleAlert } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { AuthPage } from './AuthPage';
 import { errorMessage, request } from './api';
 import type { Session, User } from './api';
 import { MarketHome } from './MarketHome';
+import { SiteNavigation } from './SiteNavigation';
 import { Workspace } from './Workspace';
 
 function currentRoute() {
@@ -53,65 +54,44 @@ export function App() {
   }
 
   return (
-    <>
+    <div className="app-shell">
       <a className="skip-link" href="#main">Skip to content</a>
-      <header className="site-header">
-        <div className="header-inner">
-          <div className="site-nav">
-            <a className="wordmark" href="/" aria-label="ThesisWatch home">
-              <span className="wordmark-icon"><BookOpen size={19} strokeWidth={2.3} aria-hidden="true" /></span>
-              <span>Thesis<span className="wordmark-accent">Watch</span></span>
-            </a>
-            <a className="header-explore" href="/" aria-current={isHome ? 'page' : undefined}>Explore stocks</a>
-          </div>
-          {(user !== undefined || failure) && (
-            <nav className="account" aria-label="Account">
-              {user ? (
-                <>
-                  <a className="button button-header-link" href="/workspace/" aria-current={isWorkspace ? 'page' : undefined}>
-                    My workspace
-                  </a>
-                  <button className="button button-account" type="button" onClick={signOut} disabled={signingOut}>
-                    <LogOut size={16} aria-hidden="true" /> {signingOut ? 'Signing out…' : 'Sign out'}
-                  </button>
-                </>
-              ) : (
-                <>
-                  <a className="button button-header-link" href="/sign-in/" aria-current={route === '/sign-in' ? 'page' : undefined}>Sign in</a>
-                  <a className="button button-header-accent" href="/sign-up/" aria-current={route === '/sign-up' ? 'page' : undefined}>Sign up</a>
-                </>
-              )}
-            </nav>
-          )}
-        </div>
-      </header>
-      {signOutError && <p className="page-notice notice notice-error" role="alert">{signOutError}</p>}
-      {isHome ? (
-        <MarketHome signedIn={Boolean(user)} />
-      ) : isWorkspace || isAuth ? (
-        failure ? (
-          <main id="main" className="connection-view panel">
-            <CircleAlert size={23} aria-hidden="true" />
-            <h1>Could not open your account</h1>
-            <p role="alert">{failure}</p>
-            <button className="button button-primary" type="button" onClick={() => {
-              setFailure('');
-              setAttempt((value) => value + 1);
-            }}>Try again</button>
-          </main>
-        ) : redirect || user === undefined ? (
-          <main id="main" className="connection-view panel"><p role="status">Opening ThesisWatch…</p></main>
-        ) : isWorkspace && user ? (
-          <Workspace key={user.id} />
+      <SiteNavigation
+        route={route}
+        user={user}
+        showAccount={user !== undefined || Boolean(failure)}
+        signingOut={signingOut}
+        onSignOut={signOut}
+      />
+      <div className="app-content">
+        {signOutError && <p className="page-notice notice notice-error" role="alert">{signOutError}</p>}
+        {isHome ? (
+          <MarketHome />
+        ) : isWorkspace || isAuth ? (
+          failure ? (
+            <main id="main" className="connection-view panel">
+              <CircleAlert size={23} aria-hidden="true" />
+              <h1>Could not open your account</h1>
+              <p role="alert">{failure}</p>
+              <button className="button button-primary" type="button" onClick={() => {
+                setFailure('');
+                setAttempt((value) => value + 1);
+              }}>Try again</button>
+            </main>
+          ) : redirect || user === undefined ? (
+            <main id="main" className="connection-view panel"><p role="status">Opening ThesisWatch…</p></main>
+          ) : isWorkspace && user ? (
+            <Workspace key={user.id} />
+          ) : (
+            <AuthPage mode={route === '/sign-up' ? 'sign-up' : 'sign-in'} onSuccess={setUser} />
+          )
         ) : (
-          <AuthPage mode={route === '/sign-up' ? 'sign-up' : 'sign-in'} onSuccess={setUser} />
-        )
-      ) : (
-        <main id="main" className="connection-view panel">
-          <h1>Page unavailable</h1>
-          <p><a href="/">Back to the stock explorer</a></p>
-        </main>
-      )}
-    </>
+          <main id="main" className="connection-view panel">
+            <h1>Page unavailable</h1>
+            <p><a href="/">Back to Home</a></p>
+          </main>
+        )}
+      </div>
+    </div>
   );
 }

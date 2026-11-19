@@ -4,7 +4,14 @@ import { expect, test } from '@playwright/test';
 test('browses and filters the public stock directory without an account', async ({ page }) => {
   const response = await page.goto('/');
   expect(response?.ok()).toBeTruthy();
-  await expect(page.getByRole('heading', { name: 'Explore stocks', exact: true })).toBeVisible();
+  await expect(page.getByRole('heading', { name: 'Top Stories', exact: true })).toBeVisible();
+  await expect(page.getByRole('link', { name: 'Home', exact: true })).toHaveAttribute('aria-current', 'page');
+  const movers = page.getByRole('complementary', { name: 'One-year movers' });
+  await expect(movers.getByText('Sample data', { exact: true })).toBeVisible();
+  await expect(movers.getByRole('heading', { level: 3 })).toHaveText(['Top Loss', 'Top Gains', 'Top Rebound']);
+  const events = page.getByRole('complementary', { name: 'Next 30 Days' });
+  await expect(events.getByText('Sample schedule', { exact: true })).toBeVisible();
+  await expect(events.getByRole('listitem')).toHaveCount(3);
   await expect(page.getByText('Listing information only. Live prices aren’t available.')).toBeVisible();
   const directory = page.getByRole('region', { name: 'Stock directory' });
   await expect(directory.getByRole('rowheader', { name: 'NVDA' })).toBeVisible();
@@ -38,7 +45,7 @@ test('creates an account from the public homepage and opens its workspace', asyn
   await expect(page.getByRole('heading', { name: 'Research dashboard' })).toBeVisible();
 
   await page.getByRole('link', { name: 'ThesisWatch home' }).click();
-  await expect(page.getByRole('heading', { name: 'Explore stocks', exact: true })).toBeVisible();
+  await expect(page.getByRole('heading', { name: 'Top Stories', exact: true })).toBeVisible();
   await expect(page.getByRole('link', { name: 'My workspace' })).toBeVisible();
 });
 
@@ -72,6 +79,6 @@ test('signs in and loads a saved watchlist after a reload', async ({ page }) => 
   await expect(savedWatchlist).toHaveCount(0);
 
   await page.getByRole('button', { name: 'Sign out' }).click();
-  await expect(page.getByRole('heading', { name: 'Explore stocks', exact: true })).toBeVisible();
+  await expect(page.getByRole('heading', { name: 'Top Stories', exact: true })).toBeVisible();
   await expect(page.getByRole('link', { name: 'My workspace' })).toHaveCount(0);
 });
