@@ -21,4 +21,4 @@ class ResearchUserAdmin(UserAdmin):
 
 admin.site.unregister(get_user_model())
 admin.site.register(get_user_model(), ResearchUserAdmin)
-admin.site.site_header = "ThesisWatch administration"
+admin.site.site_header = "DataTalk administration"

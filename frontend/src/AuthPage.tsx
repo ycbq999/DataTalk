@@ -75,7 +75,7 @@ export function AuthPage({ mode, onSuccess }: { mode: 'sign-in' | 'sign-up'; onS
           </button>
         </form>
         <p className="auth-switch">
-          {signingUp ? <>Already registered? <a href="/sign-in/">Sign in</a></> : <>New to ThesisWatch? <a href="/sign-up/">Sign up</a></>}
+          {signingUp ? <>Already registered? <a href="/sign-in/">Sign in</a></> : <>New to DataTalk? <a href="/sign-up/">Sign up</a></>}
         </p>
       </section>
     </main>

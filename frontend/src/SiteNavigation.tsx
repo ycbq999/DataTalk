@@ -94,9 +94,9 @@ export function SiteNavigation({ route, user, showAccount, signingOut, onSignOut
         }}
       >
         <div className="sidebar-top">
-          <a className="wordmark" href="/" aria-label="ThesisWatch home" title={expanded ? undefined : 'ThesisWatch home'}>
+          <a className="wordmark" href="/" aria-label="DataTalk home" title={expanded ? undefined : 'DataTalk home'}>
             <span className="wordmark-icon"><BookOpen size={19} strokeWidth={2.3} aria-hidden="true" /></span>
-            <span className="sidebar-label">Thesis<span className="wordmark-accent">Watch</span></span>
+            <span className="sidebar-label">Data<span className="wordmark-accent">Talk</span></span>
           </a>
           <button
             ref={toggle}

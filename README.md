@@ -1,6 +1,6 @@
-# ThesisWatch
+# DataTalk
 
-ThesisWatch pairs a public stock directory with a private research workspace. Explore listed companies without signing in. Create an account to organize stocks into named watchlists, save notes, and compare citation-backed thesis versions. The Django API and React dashboard share a domain in production. PostgreSQL stores user data. A separate Celery worker runs optional OpenAI research.
+DataTalk pairs a public dashboard of market sentiment, global indices, and upcoming events with a private research workspace. The public dashboard uses sample data. Create an account to organize stocks into named watchlists, save notes, and compare citation-backed thesis versions. The Django API and React dashboard share a domain in production. PostgreSQL stores user data. A separate Celery worker runs optional OpenAI research.
 
 ## Run on either computer
 
@@ -10,7 +10,7 @@ Install Docker with the Compose plugin. From a clean Git checkout:
 docker compose up --build -d
 ```
 
-Open [ThesisWatch](http://127.0.0.1:5173/) to browse the starter US securities catalog. Use **Sign up** to create an account or **Sign in** to open your existing workspace. Create a watchlist, add a stock such as MSFT, and save a note.
+Open [DataTalk](http://127.0.0.1:5173/) to explore the **World Stories** dashboard. Use **Sign up** to create an account or **Sign in** to open your existing workspace. Create a watchlist, add a stock such as MSFT, and save a note.
 
 To manage the catalog and accounts in [Django admin](http://127.0.0.1:8000/admin/), create a separate operations account with `docker compose exec web python manage.py createsuperuser`.
 
@@ -26,7 +26,7 @@ Run this in the browser editor's terminal:
 bash .devcontainer/compose.sh up --build -d
 ```
 
-In the **Ports** tab, open **ThesisWatch** on port **5173** and keep its visibility **Private**. The preview uses the codespace's own PostgreSQL database. Sign up there if you're using it for the first time. The script configures the forwarded HTTPS address for Vite and Django, so signup and sign-in work through the preview.
+In the **Ports** tab, open **DataTalk** on port **5173** and keep its visibility **Private**. The preview uses the codespace's own PostgreSQL database. Sign up there if you're using it for the first time. The script configures the forwarded HTTPS address for Vite and Django, so signup and sign-in work through the preview.
 
 When you're done, stop the codespace from [your Codespaces list](https://github.com/codespaces). To stop the app while keeping the codespace open, run `bash .devcontainer/compose.sh stop`.
 

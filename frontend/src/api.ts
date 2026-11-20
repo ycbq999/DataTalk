@@ -90,7 +90,7 @@ export class ApiError extends Error {
 export function errorMessage(error: unknown) {
   return error instanceof ApiError
     ? error.message
-    : 'Could not connect to ThesisWatch. Try again.';
+    : 'Could not connect to DataTalk. Try again.';
 }
 
 export async function request<T>(
@@ -122,10 +122,10 @@ export async function request<T>(
       messageFromResponse(payload)
         ?? (response.status === 403
           ? 'Your session could not be verified. Refresh the page and try again.'
-          : 'ThesisWatch could not complete the request. Try again.'),
+          : 'DataTalk could not complete the request. Try again.'),
     );
   }
-  if (payload === undefined) throw new ApiError(response.status, 'ThesisWatch returned an unexpected response.');
+  if (payload === undefined) throw new ApiError(response.status, 'DataTalk returned an unexpected response.');
   return payload as T;
 }
 

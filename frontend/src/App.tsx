@@ -79,7 +79,7 @@ export function App() {
               }}>Try again</button>
             </main>
           ) : redirect || user === undefined ? (
-            <main id="main" className="connection-view panel"><p role="status">Opening ThesisWatch…</p></main>
+            <main id="main" className="connection-view panel"><p role="status">Opening DataTalk…</p></main>
           ) : isWorkspace && user ? (
             <Workspace key={user.id} />
           ) : (

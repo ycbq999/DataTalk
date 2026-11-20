@@ -1,5 +1,5 @@
 {
-  "name": "ThesisWatch",
+  "name": "DataTalk",
   "image": "mcr.microsoft.com/devcontainers/base:ubuntu24.04",
   "remoteUser": "vscode",
   "features": {
@@ -8,7 +8,7 @@
   "forwardPorts": [5173],
   "portsAttributes": {
     "5173": {
-      "label": "ThesisWatch",
+      "label": "DataTalk",
       "onAutoForward": "notify"
     }
   },
