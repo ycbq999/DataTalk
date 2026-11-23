@@ -1,6 +1,10 @@
 \set ON_ERROR_STOP on
-\set runtime_role thesiswatch_app
-\getenv runtime_password THESISWATCH_DB_APP_PASSWORD
+\set runtime_role datatalk_app
+\getenv configured_runtime_role DATATALK_DB_APP
+\if :{?configured_runtime_role}
+\set runtime_role :configured_runtime_role
+\endif
+\getenv runtime_password DATATALK_DB_APP_PASSWORD
 
 -- Run in the application database as the role that owns and runs migrations.
 -- An existing role retains its credential. Rotate it via psql \password separately.

@@ -1,4 +1,4 @@
-name: thesiswatch
+name: datatalk
 
 x-backend: &backend
   build:
@@ -8,7 +8,7 @@ x-backend: &backend
     - ./backend:/app/backend:ro
 
 x-runtime-env: &runtime-env
-  DATABASE_URL: postgresql://thesiswatch_app:${THESISWATCH_DB_APP_PASSWORD:-local-app-only}@db:5432/thesiswatch
+  DATABASE_URL: postgresql://${DATATALK_DB_APP:-datatalk_app}:${DATATALK_DB_APP_PASSWORD:-local-app-only}@db:5432/${DATATALK_DB_NAME:-datatalk}
   DJANGO_SECRET_KEY: ${DJANGO_SECRET_KEY:-django-insecure-local-development-only}
   DJANGO_DEBUG: "1"
   DJANGO_SECURE_COOKIES: "0"
@@ -23,15 +23,16 @@ services:
   db:
     image: postgres:17-alpine
     environment:
-      POSTGRES_DB: thesiswatch
-      POSTGRES_USER: thesiswatch_owner
-      POSTGRES_PASSWORD: ${THESISWATCH_DB_OWNER_PASSWORD:-local-owner-only}
-      THESISWATCH_DB_APP_PASSWORD: ${THESISWATCH_DB_APP_PASSWORD:-local-app-only}
+      POSTGRES_DB: ${DATATALK_DB_NAME:-datatalk}
+      POSTGRES_USER: ${DATATALK_DB_OWNER:-datatalk_owner}
+      POSTGRES_PASSWORD: ${DATATALK_DB_OWNER_PASSWORD:-local-owner-only}
+      DATATALK_DB_APP: ${DATATALK_DB_APP:-datatalk_app}
+      DATATALK_DB_APP_PASSWORD: ${DATATALK_DB_APP_PASSWORD:-local-app-only}
     volumes:
       - postgres-data:/var/lib/postgresql/data
       - ./infra/postgres/runtime-role.sql:/docker-entrypoint-initdb.d/10-runtime-role.sql:ro
     healthcheck:
-      test: [CMD, pg_isready, -h, 127.0.0.1, -U, thesiswatch_owner, -d, thesiswatch]
+      test: [CMD-SHELL, 'pg_isready -h 127.0.0.1 -U "$$POSTGRES_USER" -d "$$POSTGRES_DB"']
       interval: 5s
       timeout: 3s
       retries: 12
@@ -41,7 +42,7 @@ services:
     environment:
       <<: *runtime-env
       MIGRATE_DB: "1"
-      MIGRATION_DATABASE_URL: postgresql://thesiswatch_owner:${THESISWATCH_DB_OWNER_PASSWORD:-local-owner-only}@db:5432/thesiswatch
+      MIGRATION_DATABASE_URL: postgresql://${DATATALK_DB_OWNER:-datatalk_owner}:${DATATALK_DB_OWNER_PASSWORD:-local-owner-only}@db:5432/${DATATALK_DB_NAME:-datatalk}
     command: [python, manage.py, migrate, --noinput]
     depends_on:
       db:
@@ -106,4 +107,6 @@ services:
 
 volumes:
   postgres-data:
+    name: ${DATATALK_POSTGRES_VOLUME:-datatalk_postgres-data}
   redis-data:
+    name: ${DATATALK_REDIS_VOLUME:-datatalk_redis-data}

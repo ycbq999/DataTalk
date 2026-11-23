@@ -67,7 +67,7 @@ def main():
     token = os.environ.get("RENDER_API_KEY", "")
     web = os.environ.get("RENDER_WEB_SERVICE_ID", "")
     worker = os.environ.get("RENDER_WORKER_SERVICE_ID", "")
-    url = os.environ.get("THESISWATCH_URL", "")
+    url = os.environ.get("DATATALK_URL", "")
     image = os.environ["RELEASE_IMAGE"]
     if not token or not url.startswith("https://"):
         raise ValueError("Set the Render API token and deployed HTTPS URL before releasing.")

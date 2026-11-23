@@ -68,7 +68,7 @@ jobs:
           RENDER_API_KEY: ${{ secrets.RENDER_STAGING_API_KEY }}
           RENDER_WEB_SERVICE_ID: ${{ vars.RENDER_STAGING_WEB_SERVICE_ID }}
           RENDER_WORKER_SERVICE_ID: ${{ vars.RENDER_STAGING_WORKER_SERVICE_ID }}
-          THESISWATCH_URL: ${{ vars.RENDER_STAGING_URL }}
+          DATATALK_URL: ${{ vars.RENDER_STAGING_URL }}
         run: |
           python infra/render_release.py
           if [[ -n "$RENDER_WORKER_SERVICE_ID" ]]; then
@@ -82,7 +82,7 @@ jobs:
           RENDER_API_KEY: ${{ secrets.RENDER_PRODUCTION_API_KEY }}
           RENDER_WEB_SERVICE_ID: ${{ vars.RENDER_PRODUCTION_WEB_SERVICE_ID }}
           RENDER_WORKER_SERVICE_ID: ${{ vars.RENDER_PRODUCTION_WORKER_SERVICE_ID }}
-          THESISWATCH_URL: ${{ vars.RENDER_PRODUCTION_URL }}
+          DATATALK_URL: ${{ vars.RENDER_PRODUCTION_URL }}
         run: |
           mode=disabled
           if [[ -n "$RENDER_WORKER_SERVICE_ID" ]]; then

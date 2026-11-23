@@ -20,9 +20,9 @@ COPY backend/ ./
 FROM backend-dev AS production
 ENV UI_DIST_DIR=/app/ui
 COPY --from=frontend-build /app/frontend/dist /app/ui
-RUN DJANGO_DEBUG=1 THESISWATCH_SQLITE=1 \
+RUN DJANGO_DEBUG=1 DATATALK_SQLITE=1 \
     python manage.py collectstatic --noinput
-RUN useradd --uid 10001 --create-home --shell /usr/sbin/nologin thesiswatch
-USER thesiswatch
+RUN useradd --uid 10001 --create-home --shell /usr/sbin/nologin datatalk
+USER datatalk
 EXPOSE 8000
 CMD ["sh", "-c", "unset MIGRATION_DATABASE_URL MIGRATE_DB; exec gunicorn config.wsgi:application --bind 0.0.0.0:${PORT:-8000} --workers ${WEB_CONCURRENCY:-2} --access-logfile - --error-logfile -"]

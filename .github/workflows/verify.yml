@@ -15,14 +15,14 @@ jobs:
       postgres:
         image: postgres:17-alpine
         env:
-          POSTGRES_USER: thesiswatch_owner
+          POSTGRES_USER: datatalk_owner
           POSTGRES_PASSWORD: ci-owner
-          POSTGRES_DB: thesiswatch
-          THESISWATCH_DB_APP_PASSWORD: ci-app
+          POSTGRES_DB: datatalk
+          DATATALK_DB_APP_PASSWORD: ci-app
         ports:
           - 5432:5432
         options: >-
-          --health-cmd "pg_isready -U thesiswatch_owner -d thesiswatch"
+          --health-cmd "pg_isready -U datatalk_owner -d datatalk"
           --health-interval 5s
           --health-timeout 5s
           --health-retries 10
@@ -30,7 +30,7 @@ jobs:
       DJANGO_SECRET_KEY: ci-only-secret-with-enough-entropy-never-use-in-production-381f8a
       DJANGO_ALLOWED_HOSTS: localhost,127.0.0.1
       DJANGO_SECURE_COOKIES: "0"
-      DATABASE_URL: postgresql://thesiswatch_owner:ci-owner@127.0.0.1:5432/thesiswatch
+      DATABASE_URL: postgresql://datatalk_owner:ci-owner@127.0.0.1:5432/datatalk
 
     steps:
       - uses: actions/checkout@v5
@@ -73,19 +73,19 @@ jobs:
           docker build --platform linux/amd64 \
             --label "org.opencontainers.image.source=$GITHUB_SERVER_URL/$GITHUB_REPOSITORY" \
             --label "org.opencontainers.image.revision=$GITHUB_SHA" \
-            --tag "thesiswatch-ci:$GITHUB_SHA" .
+            --tag "datatalk-ci:$GITHUB_SHA" .
       - name: Run the release image against PostgreSQL as the runtime role
         env:
           POSTGRES_CONTAINER_ID: ${{ job.services.postgres.id }}
-          MIGRATION_DATABASE_URL: postgresql://thesiswatch_owner:ci-owner@127.0.0.1:5432/thesiswatch
-          DATABASE_URL: postgresql://thesiswatch_app:ci-app@127.0.0.1:5432/thesiswatch
+          MIGRATION_DATABASE_URL: postgresql://datatalk_owner:ci-owner@127.0.0.1:5432/datatalk
+          DATABASE_URL: postgresql://datatalk_app:ci-app@127.0.0.1:5432/datatalk
           PLAYWRIGHT_BASE_URL: http://127.0.0.1:18000
           PLAYWRIGHT_USERNAME: smoke-user
           PLAYWRIGHT_PASSWORD: smoke-password-ci-only
         run: |
-          docker exec -i "$POSTGRES_CONTAINER_ID" psql -U thesiswatch_owner -d thesiswatch \
+          docker exec -i "$POSTGRES_CONTAINER_ID" psql -U datatalk_owner -d datatalk \
             < infra/postgres/runtime-role.sql
-          image="thesiswatch-ci:$GITHUB_SHA"
+          image="datatalk-ci:$GITHUB_SHA"
           settings=(--network host -e DJANGO_SECRET_KEY -e DJANGO_ALLOWED_HOSTS -e DATABASE_URL)
           docker run --rm "${settings[@]}" -e DJANGO_SECURE_COOKIES \
             -e MIGRATE_DB=1 -e MIGRATION_DATABASE_URL "$image" python manage.py migrate --noinput
@@ -94,9 +94,9 @@ jobs:
           docker run --rm "${settings[@]}" -e DJANGO_SECURE_COOKIES \
             -e PLAYWRIGHT_USERNAME -e PLAYWRIGHT_PASSWORD "$image" \
             python manage.py shell -c 'import os; from django.contrib.auth import get_user_model; get_user_model().objects.create_user(username=os.environ["PLAYWRIGHT_USERNAME"], password=os.environ["PLAYWRIGHT_PASSWORD"])'
-          docker run --rm --detach --name thesiswatch-ci "${settings[@]}" \
+          docker run --rm --detach --name datatalk-ci "${settings[@]}" \
             -e DJANGO_SECURE_COOKIES -e PORT=18000 "$image"
-          trap 'docker logs thesiswatch-ci; docker stop thesiswatch-ci' EXIT
+          trap 'docker logs datatalk-ci; docker stop datatalk-ci' EXIT
           python infra/smoke.py "$PLAYWRIGHT_BASE_URL"
           pnpm --dir frontend test:browser
       - name: Publish verified image by digest
@@ -107,7 +107,7 @@ jobs:
           printf '%s' "$GHCR_TOKEN" | docker login ghcr.io --username "$GITHUB_ACTOR" --password-stdin
           repository="ghcr.io/${GITHUB_REPOSITORY,,}"
           tag="$repository:$GITHUB_SHA"
-          docker tag "thesiswatch-ci:$GITHUB_SHA" "$tag"
+          docker tag "datatalk-ci:$GITHUB_SHA" "$tag"
           docker push "$tag"
           mkdir -p release-evidence
           docker image inspect --format '{{ index .RepoDigests 0 }}' "$tag" > release-evidence/image.txt

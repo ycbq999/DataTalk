@@ -1,10 +1,12 @@
 # DataTalk
 
+Repository: [ycbq999/DataTalk](https://github.com/ycbq999/DataTalk).
+
 DataTalk pairs a public dashboard of market sentiment, global indices, and upcoming events with a private research workspace. The public dashboard uses sample data. Create an account to organize stocks into named watchlists, save notes, and compare citation-backed thesis versions. The Django API and React dashboard share a domain in production. PostgreSQL stores user data. A separate Celery worker runs optional OpenAI research.
 
 ## Run on either computer
 
-Install Docker with the Compose plugin. From a clean Git checkout:
+Install Docker with the Compose plugin. For an existing installation, follow the [DataTalk rename upgrade steps](docs/deployment.md#upgrading-an-existing-installation-to-datatalk) first to keep using its database and volumes. From a clean Git checkout:
 
 ```sh
 docker compose up --build -d

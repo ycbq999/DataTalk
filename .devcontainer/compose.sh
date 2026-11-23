@@ -6,6 +6,6 @@ if [[ ${CODESPACES:-} != true || -z ${CODESPACE_NAME:-} || -z ${GITHUB_CODESPACE
   exit 2
 fi
 
-export THESISWATCH_PREVIEW_HOST="${CODESPACE_NAME}-5173.${GITHUB_CODESPACES_PORT_FORWARDING_DOMAIN}"
+export DATATALK_PREVIEW_HOST="${CODESPACE_NAME}-5173.${GITHUB_CODESPACES_PORT_FORWARDING_DOMAIN}"
 cd -- "$(dirname -- "${BASH_SOURCE[0]}")/.."
 exec docker compose -f compose.yaml -f .devcontainer/compose.codespaces.yaml "$@"

@@ -1,4 +1,4 @@
-# Deployment runbook
+# DataTalk deployment runbook
 
 GitHub Actions verifies both applications and builds a Linux production image containing Django, Gunicorn, and the compiled React dashboard. The web service and the optional research worker use the same image digest. A release to production uses the digest that passed staging.
 
@@ -16,19 +16,39 @@ The defaults are for local use. Copy `.env.example` to `.env` to override them. 
 
 For local AI research, set `RESEARCH_ENABLED=1` and an `OPENAI_API_KEY` in `.env`, then run `docker compose --profile research up --build`. The worker gets the key. Django sends jobs to a private Redis container. If enabling the profile against an existing backend, recreate the web service so it sees the new feature flag.
 
+## Upgrading an existing installation to DataTalk
+
+The repository and application now use DataTalk. Fresh installations use a `datatalk` database, `datatalk_owner` and `datatalk_app` roles, and DataTalk Docker volumes. Existing databases and roles do not need to be renamed to upgrade.
+
+1. Back up the existing database. Stop the previous Compose project with `docker compose -p thesiswatch --profile research down`. Keep its volumes; do not add `--volumes`.
+2. In the existing `.env`, rename the `THESISWATCH_DB_OWNER_PASSWORD` and `THESISWATCH_DB_APP_PASSWORD` keys to `DATATALK_DB_OWNER_PASSWORD` and `DATATALK_DB_APP_PASSWORD`, keeping their values. Preserve the old database, roles, and volume names with these overrides (adjust if the original installation used different names):
+
+   ```dotenv
+   DATATALK_DB_NAME=thesiswatch
+   DATATALK_DB_OWNER=thesiswatch_owner
+   DATATALK_DB_APP=thesiswatch_app
+   DATATALK_POSTGRES_VOLUME=thesiswatch_postgres-data
+   DATATALK_REDIS_VOLUME=thesiswatch_redis-data
+   ```
+
+3. Start `docker compose up --build -d`, adding `--profile research` before `up` if research was enabled. The migration service updates existing row security policies to `datatalk.user_id` before the web service starts. Original migrations retain their historical namespace so upgrades and migration reversals remain valid.
+4. Verify existing accounts, watchlists, and notes before retiring old images. Change any local `THESISWATCH_SQLITE` and `THESISWATCH_SQLITE_PATH` settings to `DATATALK_SQLITE` and `DATATALK_SQLITE_PATH`.
+
+For hosted deployments, retain existing `DATABASE_URL` and `MIGRATION_DATABASE_URL` credentials and database names. Stop the previous web and worker processes before applying the new migrations, then start the DataTalk image for both; old images use a different row security namespace. If reversing this release, stop the DataTalk processes, reverse research to `0002_row_security` and core to `0004_authwindow` using the DataTalk image and migration credentials, then start the previous image. Use fresh DataTalk CI and staging runs for subsequent releases because image repository names change with the GitHub repository.
+
 ## One-time setup per hosted environment
 
 Render is the initial provider. Create separate staging and production services, databases, and secrets, using the same settings and deployment steps. A web-only environment can operate with research disabled.
 
 1. Wait for the first successful main CI run. Its summary contains the image digest in GitHub Container Registry. Add a Render registry credential with read access to that private package. Use the digest reference when creating an image-backed service.
-2. Create a managed PostgreSQL database. Use its original owner credentials for migrations. Connect as that owner and run `infra/postgres/runtime-role.sql` using `psql -f` in the application database with `THESISWATCH_DB_APP_PASSWORD` supplied via your local process environment. It creates `thesiswatch_app` and grants access to the owner's tables and sequences, including those created by future migrations. Keep this role separate from the migration owner and any role capable of bypassing row security. Use private database URLs for hosted app services, and restrict external database access after provisioning.
+2. Create a managed PostgreSQL database. Use its original owner credentials for migrations. Connect as that owner and run `infra/postgres/runtime-role.sql` using `psql -f` in the application database with `DATATALK_DB_APP_PASSWORD` supplied via your local process environment. It creates `datatalk_app` and grants access to the owner's tables and sequences, including those created by future migrations. Keep this role separate from the migration owner and any role capable of bypassing row security. Use private database URLs for hosted app services, and restrict external database access after provisioning.
 3. Create the paid image-backed **web service**. Keep the image's default start command, set the health check to `/api/v1/ready/`, and set its pre-deploy command to `env MIGRATE_DB=1 python manage.py migrate --noinput`. Fill in the environment variables below before first deployment. The entry command removes the migration credential from Gunicorn's environment. Render still stores it as a web service secret and injects it into Render-managed shells. Restrict service-shell and configuration access accordingly. The worker never needs this secret.
 4. To enable research, create a persistent Redis-compatible Key Value service with `noeviction` and a background **worker** from the same image digest. Set its Docker Command to `celery -A config worker --loglevel INFO --concurrency=1`. Give it the worker settings below and a shutdown grace period long enough for in-flight work to acknowledge or finish, within provider limits. Configure the web application to use that same broker only after the worker is ready.
 5. Create a separate Django administrator with `python manage.py createsuperuser` in the web service shell. Open `/admin/` over HTTPS to manage accounts and the supported stock catalog. Visitors can create ordinary accounts from the public home page.
 
 | Environment variable | Web | Worker |
 | --- | --- | --- |
-| `DATABASE_URL` | Private connection for `thesiswatch_app` | Same environment's runtime role |
+| `DATABASE_URL` | Private connection for `datatalk_app` | Same environment's runtime role |
 | `MIGRATION_DATABASE_URL` | Private connection for the migration owner | Leave unset |
 | `DJANGO_SECRET_KEY` | Unique randomized key of at least 50 characters per environment | Same environment's key |
 | `DJANGO_ALLOWED_HOSTS` | Comma-separated service hostnames without scheme | Same setting |

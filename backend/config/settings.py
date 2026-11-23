@@ -19,7 +19,7 @@ def values(name, default=""):
 DEBUG = enabled("DJANGO_DEBUG")
 SECRET_KEY = os.environ.get("DJANGO_SECRET_KEY", "")
 if DEBUG and not SECRET_KEY:
-    SECRET_KEY = "django-insecure-local-development-only-key-for-thesiswatch"
+    SECRET_KEY = "django-insecure-local-development-only-key-for-datatalk"
 if not SECRET_KEY or (not DEBUG and len(SECRET_KEY) < 50):
     raise ImproperlyConfigured("Set DJANGO_SECRET_KEY to a unique secret of at least 50 characters.")
 
@@ -74,8 +74,8 @@ if database_url:
     database = dj_database_url.parse(database_url, conn_max_age=60, conn_health_checks=True)
     if database["ENGINE"] != "django.db.backends.postgresql":
         raise ImproperlyConfigured(f"{database_variable} must point to PostgreSQL.")
-elif DEBUG and enabled("THESISWATCH_SQLITE") and database_variable == "DATABASE_URL":
-    sqlite_path = os.environ.get("THESISWATCH_SQLITE_PATH") or BASE_DIR / "db.sqlite3"
+elif DEBUG and enabled("DATATALK_SQLITE") and database_variable == "DATABASE_URL":
+    sqlite_path = os.environ.get("DATATALK_SQLITE_PATH") or BASE_DIR / "db.sqlite3"
     database = {"ENGINE": "django.db.backends.sqlite3", "NAME": sqlite_path}
 else:
     raise ImproperlyConfigured(f"Set {database_variable} to connect to PostgreSQL.")

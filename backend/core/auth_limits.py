@@ -14,7 +14,7 @@ LIMITS = {"sign-in": (30, 300), "sign-up": (12, 600)}
 def auth_retry_after(request, action):
     # Use the transport peer. Forwarding headers are not a trusted client identity.
     client = request.META.get("REMOTE_ADDR", "")
-    key = salted_hmac(f"thesiswatch.{action}", client, algorithm="sha256").hexdigest()
+    key = salted_hmac(f"datatalk.{action}", client, algorithm="sha256").hexdigest()
     maximum, seconds = LIMITS[action]
     with transaction.atomic():
         now = timezone.now()

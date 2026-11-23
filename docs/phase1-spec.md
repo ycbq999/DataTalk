@@ -1,6 +1,6 @@
-# ThesisWatch — Phase 1 Specification
+# DataTalk — Phase 1 Specification
 
-**Status:** Draft v2.0 · **Target:** 2027 · **Owner:** ThesisWatch
+**Status:** Draft v2.0 · **Target:** 2027 · **Owner:** DataTalk
 
 ## Product objective
 Ship a small, elegant, demonstrable **production-grade AI investment research SaaS** that (1) is tested by real investors, (2) demonstrates practical AI Engineer skills, and (3) helps track the user's own stock investment theses. Favor a reliable end-to-end workflow over a broad feature list.

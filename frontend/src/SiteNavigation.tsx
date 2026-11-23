@@ -4,7 +4,7 @@ import { useEffect, useRef, useState } from 'react';
 import type { User } from './api';
 
 const compactViewport = '(max-width: 760px)';
-const sidebarPreference = 'thesiswatch.sidebar.collapsed';
+const sidebarPreference = 'datatalk.sidebar.collapsed';
 
 function desktopNavigationExpanded() {
   try {

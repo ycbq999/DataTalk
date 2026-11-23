@@ -132,14 +132,14 @@ class DashboardApiTests(TestCase):
         # Postgres CI uses an administrator to create the test database. Exercise
         # policies explicitly as a role that owns neither the schema nor its tables.
         with connection.cursor() as cursor:
-            cursor.execute("CREATE ROLE thesiswatch_test_runtime NOLOGIN NOBYPASSRLS")
-            cursor.execute("GRANT USAGE ON SCHEMA public TO thesiswatch_test_runtime")
+            cursor.execute("CREATE ROLE datatalk_test_runtime NOLOGIN NOBYPASSRLS")
+            cursor.execute("GRANT USAGE ON SCHEMA public TO datatalk_test_runtime")
             cursor.execute(
                 "GRANT SELECT, INSERT, UPDATE, DELETE ON core_watchlist, core_watchlistentry, "
-                "core_securitynote, core_security TO thesiswatch_test_runtime"
+                "core_securitynote, core_security TO datatalk_test_runtime"
             )
-            cursor.execute("GRANT USAGE ON ALL SEQUENCES IN SCHEMA public TO thesiswatch_test_runtime")
-            cursor.execute("SET LOCAL ROLE thesiswatch_test_runtime")
+            cursor.execute("GRANT USAGE ON ALL SEQUENCES IN SCHEMA public TO datatalk_test_runtime")
+            cursor.execute("SET LOCAL ROLE datatalk_test_runtime")
         try:
             self.assertEqual(Watchlist.objects.count(), 0)
             with owner_scope(self.alice.pk):
